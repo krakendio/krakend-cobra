@@ -112,14 +112,22 @@ func parseSumFile(r io.Reader) ([]string, error) {
 	return lines, scanner.Err()
 }
 
+// readBuildInfo is a var to allow the replacement of the function in the tests
+// as the debug.ReadBuildInfo doesn't return Deps in tests.
+var readBuildInfo = debug.ReadBuildInfo
+
 func getBuildInfo() map[string]string {
 	res := map[string]string{}
-	bi, ok := debug.ReadBuildInfo()
+	bi, ok := readBuildInfo()
 	if !ok {
 		return res
 	}
 
 	for _, dep := range bi.Deps {
+		if dep.Replace != nil {
+			res[dep.Replace.Path] = dep.Replace.Version
+			continue
+		}
 		res[dep.Path] = dep.Version
 	}
 	return res
